@@ -1,0 +1,69 @@
+import java.awt.Color;
+import java.awt.Graphics;
+
+public class Battle_Bus {
+
+	private int x, y, endX, endY;
+	
+	public Battle_Bus(int X, int Y, int endx, int endy) {
+		x = X;
+		y = Y;
+		endX = endx;
+		endY = endy;
+	}
+	
+	public void tick() {
+		y+=733/(30*60);
+		x+=(Math.abs(x-endX))/(30*60);
+	}
+	
+	public void render(Graphics g) {
+		g.setColor(Color.blue);
+		for(int i=-10; i<10; i++) {
+			g.drawLine(x+i, y, (Math.abs(endX-x)+i)/30, 30);
+		}
+	}
+	
+	public void renderLine(Graphics g) {
+		g.setColor(Color.yellow);
+		int x = this.x;
+		int y = this.y;
+		int endX = this.endX;
+		int endY = this.endY;
+		for(int i=-5; i<5; i++) {
+			g.drawLine(x+i, y, endX+i, endY);
+		}
+	}
+
+	public int getX() {
+		return x;
+	}
+
+	public void setX(int x) {
+		this.x = x;
+	}
+
+	public int getY() {
+		return y;
+	}
+
+	public void setY(int y) {
+		this.y = y;
+	}
+
+	public int getEndX() {
+		return endX;
+	}
+
+	public void setEndX(int endX) {
+		this.endX = endX;
+	}
+
+	public int getEndY() {
+		return endY;
+	}
+
+	public void setEndY(int endY) {
+		this.endY = endY;
+	}
+}
