@@ -1,0 +1,548 @@
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Rectangle;
+import java.awt.image.BufferStrategy;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+
+import sim.fortnite.gfx.Circle;
+import sim.fortnite.gfx.FortniteMap;
+
+public class Game implements Runnable {
+
+	private Display display;
+	private int width, height;
+	public String title;
+	
+	private boolean running = false;
+	private Thread thread;
+	
+	private BufferStrategy bs;
+	private Graphics g;
+	
+	private FortniteMap map;
+	
+	private ArrayList<Player> players = new ArrayList<>();
+	
+	private ArrayList<Rectangle> breakIntoTiles = new ArrayList<>();
+	
+	private Battle_Bus bus;
+	
+	private ArrayList<Circle> allCircles = new ArrayList<>();
+	
+	private static final Random random = new Random();
+	
+	private ArrayList<Location> allLocations = new ArrayList<>();
+	
+	private int toSpectate = random.nextInt(100);
+	
+	final String lexicon = "ABCDEFGHIJKLMNOPQRSTUVWXYZ12345674890";
+	
+	final Set<String> identifiers = new HashSet<String>();
+	
+	
+	Circle createNewCircle(int centerX, int centerY, int radius, int newR, Color newColor) {
+	    int newRadius = radius * Random();
+	    double radians = 2.0 * 3.141592653589793 * Random();
+	    double deviation = (radius - newRadius) * Math.sqrt(Random());
+	    System.out.println(radius + " - " + newRadius + " * sqrt(0 or 1) = " + (radius-newRadius) + " * (0 or 1) = " + deviation);
+	    double newX = centerX + deviation * Math.cos(radians);
+	    System.out.println(centerX + " + " + deviation + " * cos(" + radians + ") = " + (centerX + deviation) + " * " + Math.cos(radians));
+	    double newY = centerY + deviation * Math.sin(radians);
+	    int newCirX = (int) newX;
+	    int newCirY = (int) newY;
+	    Circle newCir = new Circle(newCirX, newCirY, newR*2, newR*2, newR, newColor, true);
+	    return newCir;
+	}
+	
+	
+	
+	public int Random() {
+		if(random.nextBoolean()) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	
+	public String randomIdentifier() {
+	    StringBuilder builder = new StringBuilder();
+	    while(builder.toString().length() == 0) {
+	        int length = random.nextInt(5)+5;
+	        for(int i = 0; i < length; i++) {
+	            builder.append(lexicon.charAt(random.nextInt(lexicon.length())));
+	        }
+	        if(identifiers.contains(builder.toString())) {
+	            builder = new StringBuilder();
+	        }
+	    }
+	    return builder.toString();
+	}
+	
+	public Game(String title, int width, int height){
+		this.width = width;
+		this.height = height;
+		this.title = title;
+	}
+	
+	private void init() {
+		display = new Display(title, width, height);
+		
+		for(int x=0; x<1000; x+=30) {
+			for(int y=0; y<height; y+=30) {
+				breakIntoTiles.add(new Rectangle(x, y, 30, 30));
+			}
+		}
+		
+		allLocations.add(Location.LazyLinks);
+		allLocations.add(Location.DustyDivot);
+		allLocations.add(Location.FatalFields);
+		allLocations.add(Location.FrostyFlights);
+		allLocations.add(Location.HappyHamlet);
+		allLocations.add(Location.HauntedHills);
+		allLocations.add(Location.JunkJunction);
+		allLocations.add(Location.LonelyLodge);
+		allLocations.add(Location.LootLake);
+		allLocations.add(Location.LuckyLanding);
+		allLocations.add(Location.ParadisePalms);
+		allLocations.add(Location.PleasantPark);
+		allLocations.add(Location.PolarPeak);
+		allLocations.add(Location.RetailRow);
+		allLocations.add(Location.RiskyReels);
+		allLocations.add(Location.SaltySprings);
+		allLocations.add(Location.ShiftyShafts);
+		allLocations.add(Location.SnobbyShores);
+		allLocations.add(Location.TiltedTowers);
+		allLocations.add(Location.TomatoTemple);
+		allLocations.add(Location.WailingWoods);
+		
+		int busX = random.nextInt(width);
+		
+		bus = new Battle_Bus(busX, 0, random.nextInt(1000), height);
+		
+		map = new FortniteMap();
+		
+		for(int i=0; i<100; i++) {
+			Location toLandAt = allLocations.get(random.nextInt(allLocations.size()));
+			boolean hasFoundGood = false;
+			if(toLandAt.getAmAt() < toLandAt.getPct()) {
+				hasFoundGood = true;
+			} else {
+				while(!hasFoundGood) {
+					toLandAt = allLocations.get(random.nextInt(allLocations.size()));
+					if(toLandAt.getAmAt() < toLandAt.getPct()) {
+						hasFoundGood = true;
+					}
+				}
+			}
+			int pX = toLandAt.getX()+toLandAt.getWidth()-random.nextInt(toLandAt.getWidth());
+			int pY = toLandAt.getY()+toLandAt.getHeight()-random.nextInt(toLandAt.getHeight());
+			int tileIn = 0;
+			for(int z=0; z<breakIntoTiles.size(); z++) {
+				if(breakIntoTiles.get(i).contains(pX, pY)) {
+					tileIn = breakIntoTiles.size();
+				}
+			}
+			Player p = new Player(randomIdentifier(), pX, pY, 100, tileIn, toLandAt);
+			players.add(p);
+			toLandAt.addAmAt();
+		}
+	}
+	
+	// circle...everything
+	int circleOn = 0, circ = 0;
+	
+	// CIRCLE
+	int[] timesForCircle = {60, 260, 440, 560, 680, 770, 860, 940, 1100, 1150, 1210, 1240, 1300, 1355, 1400, 1445};
+	Circle cir = new Circle(0, 0, 0, 0, 0, null, true);
+	private boolean hasChanged = false, hasClosed = false, closing = false;
+	ArrayList<Circle> storm = new ArrayList<>();
+	private int ticksStormLastMove = 0;
+	
+	// pMovement
+	private int ticksSinceLastMove = 0;
+	
+	private void tick() {
+		if(secInGame>0) {
+			if(players.size()>1) {
+				ticksSinceLastMove++;
+				ticksStormLastMove++;
+				for(int i=0; i<players.size(); i++) { // for killing later
+					
+					for(int l=0; l<allLocations.size(); l++) {
+						Rectangle locRect = new Rectangle(allLocations.get(l).getX(), allLocations.get(l).getY(), allLocations.get(l).getWidth(), 
+								allLocations.get(l).getHeight());
+						if(locRect.contains(players.get(i).getX(), players.get(i).getY())) {
+							players.get(i).setLanding(allLocations.get(l));
+						}
+					}
+					
+					int p1tile = players.get(i).getRectIn();
+					
+					if(!(players.get(i).getHp()>0)) {
+						players.remove(i);
+					}
+					
+					boolean hasNotAttacked = true;
+					
+					if(players.size()==1) {
+						return;
+					}
+					
+					for(int l=0; l<players.size(); l++) {
+						if(players.size()==i) {
+							return;
+						}
+						/*
+						int p2tile = players.get(l).getRectIn();
+						
+						if(p1tile == p2tile) {
+							if(l!=i && hasNotAttacked && players.get(i).getSecLastAttack()>=2 && secInGame>=30) {
+								// fight
+								hasNotAttacked = false;
+								
+								players.get(i).removeSecAttack();
+								
+								players.get(i).setAttackingNow(true);
+								players.get(l).setAttackingNow(true);
+								
+								players.get(i).setAttackingCoords(players.get(l).getX(), players.get(l).getY());
+								players.get(l).setAttackingCoords(players.get(i).getX(), players.get(i).getY());
+								
+								if(players.get(i).getHp() > 0 && players.get(i).getHp() > 0) {
+									if(random.nextBoolean()) {
+										players.get(l).setHp(players.get(l).getHp()-random.nextInt(40));
+									} else {
+										players.get(i).setHp(players.get(i).getHp()-random.nextInt(40));
+									}
+								}
+								
+								players.get(i).setAttackingNow(false);
+								players.get(l).setAttackingNow(false);
+							}
+							if(!(players.get(i).getHp()>0)) {
+								players.remove(i);
+								if(i==toSpectate) {
+									toSpectate = l;
+								}
+							}
+							if(!(players.get(l).getHp()>0)) {
+								players.remove(l);
+								if(l==toSpectate) {
+									toSpectate = i;
+								}
+							}
+						}
+						**/
+					}
+					if(!(players.get(i).getHp()>0)) {
+						players.remove(i);
+					}
+				}
+				
+				if(secInGame==timesForCircle[0] && !hasChanged) { // circle 1
+					cir = new Circle(random.nextInt(width-400), random.nextInt(height-400), 400, 400, 200, Color.white, true);
+					hasChanged = true;
+					circleOn++;
+					circ++;
+				}
+				if(secInGame==timesForCircle[1] && !hasClosed) { // storm 1
+					circleOn++;
+					hasClosed = true;
+					closing = true;
+				}
+				
+				if(secInGame==timesForCircle[2] && !hasChanged) { // circle 2
+					Circle cir1 = cir;
+					cir = createNewCircle(cir1.X+(cir1.Width/2), cir1.Y+(cir1.Height/2), cir1.getRadius(), 135, Color.cyan);
+					hasChanged = true;
+					circleOn++;
+					circ++;
+				}
+				if(secInGame==timesForCircle[3] && !hasClosed) { // storm 2/1
+					circleOn++;
+					hasClosed = true;
+					closing = true;
+				}
+				
+				if(secInGame==timesForCircle[4] && !hasChanged) { // circle 3
+					Circle cir1 = cir;
+					cir = createNewCircle(cir1.X+(cir1.Width/2), cir1.Y+(cir1.Height/2), cir1.getRadius(), 90, Color.lightGray);
+					hasChanged = true;
+					circleOn++;
+					circ++;
+				}
+				if(secInGame==timesForCircle[5] && !hasClosed) { // storm 3
+					circleOn++;
+					hasClosed = true;
+					closing = true;
+				}
+				
+				if(secInGame==timesForCircle[6] && !hasChanged) { // circle 4
+					Circle cir1 = cir;
+					cir = createNewCircle(cir1.X+(cir1.Width/2), cir1.Y+(cir1.Height/2), cir1.getRadius(), 60, Color.gray);
+					hasChanged = true;
+					circleOn++;
+					circ++;
+				}
+				if(secInGame==timesForCircle[7] && !hasClosed) { // storm 4
+					circleOn++;
+					hasClosed = true;
+					closing = true;
+				}
+				
+				if(secInGame==timesForCircle[8] && !hasChanged) { // circle 5
+					Circle cir1 = new Circle(cir.X-10, cir.Y-10, cir.Width+20, cir.Height+20, (cir.Width+20)/20, null, false);
+					cir = createNewCircle(cir1.X+(cir1.Width/2), cir1.Y+(cir1.Height/2), cir1.getRadius(), 40, Color.green);
+					hasChanged = true;
+					circleOn++;
+					circ++;
+				}
+				if(secInGame==timesForCircle[9] && !hasClosed) { // storm 5
+					circleOn++;
+					hasClosed = true;
+					closing = true;
+				}
+				
+				if(secInGame==timesForCircle[10] && !hasChanged) { // circle 6
+					Circle cir1 = new Circle(cir.X-10, cir.Y-10, cir.Width+20, cir.Height+20, (cir.Width+20)/20, null, false);
+					cir = createNewCircle(cir1.X+(cir1.Width/2), cir1.Y+(cir1.Height/2), cir1.getRadius(), 27, Color.pink);
+					hasChanged = true;
+					circleOn++;
+					circ++;
+				}
+				if(secInGame==timesForCircle[11] && !hasClosed) { // storm 6
+					circleOn++;
+					hasClosed = true;
+					closing = true;
+				}
+				
+				if(secInGame==timesForCircle[12] && !hasChanged) { // circle & storm 7
+					Circle cir1 = new Circle(cir.X-10, cir.Y-10, cir.Width+20, cir.Height+20, (cir.Width+20)/20, null, false);
+					cir = createNewCircle(cir1.X+(cir1.Width/2), cir1.Y+(cir1.Height/2), cir1.getRadius(), 15, Color.blue);
+					hasChanged = true;
+					circleOn++;
+					circ++;
+					hasClosed = true;
+					closing = true;
+				}
+				
+				if(secInGame==timesForCircle[13] && !hasClosed) { // circle & storm 8
+					Circle cir1 = new Circle(cir.X-10, cir.Y-10, cir.Width+20, cir.Height+20, (cir.Width+20)/20, null, false);
+					cir = createNewCircle(cir1.X+(cir1.Width/2), cir1.Y+(cir1.Height/2), cir1.getRadius(), 5, Color.magenta);
+					hasChanged = true;
+					circleOn++;
+					circ++;
+					hasClosed = true;
+					closing = true;
+				}
+				
+				if(secInGame==timesForCircle[14] && !hasClosed) { // circle & storm 9
+					Circle cir1 = new Circle(cir.X-10, cir.Y-10, cir.Width+20, cir.Height+20, (cir.Width+20)/20, null, false);
+					cir = createNewCircle(cir1.X+(cir1.Width/2), cir1.Y+(cir1.Height/2), cir1.getRadius(), 0, Color.red);
+					hasChanged = true;
+					circleOn++;
+					circ++;
+					hasClosed = true;
+					closing = true;
+				}
+				
+				for(int i=0; i<timesForCircle.length; i++) {
+					if(secInGame == timesForCircle[i] && allCircles.size() != circ) {
+						allCircles.add(cir);
+					}
+				}
+				
+				if(closing && ticksStormLastMove>=20) {
+					ticksStormLastMove=0;
+					if(storm.size()==0) { // no stormline
+						// making the stormline
+						Circle stormLine = new Circle(-200, -200, width+400, height+400, (width+400)/2, Color.magenta, false);
+						storm.add(stormLine);
+					} else { // existing stormline
+						Circle stormLine = new Circle(storm.get(storm.size()-1).getX()+1, storm.get(storm.size()-1).getY()+1, 
+								storm.get(storm.size()-1).getWidth()-1, storm.get(storm.size()-1).getHeight()-1, 0, Color.magenta, false); // unneeded
+						if(stormLine.getX()>=cir.getX()) {
+							stormLine.setX(cir.getX());
+						}
+						if(stormLine.getY()>=cir.getY()) {
+							stormLine.setY(cir.getY());
+						}
+						if(stormLine.getX()+stormLine.getWidth()<=cir.getX()+cir.getWidth()) {
+							stormLine.setWidth(cir.getWidth());
+						}
+						if(stormLine.getY()+stormLine.getHeight()<=cir.getY()+cir.getHeight()) {
+							stormLine.setHeight(cir.getHeight());
+						}
+						storm.add(stormLine);
+					}
+					closing = false;
+				}
+				if(circleOn!=0 && ticksSinceLastMove>=60) {
+					ticksSinceLastMove=0;
+					for(int i=0; i<players.size(); i++) {
+						Circle p = new Circle(players.get(i).getX()-3, players.get(i).getY()-3, 6, 6, 3, Color.black, true);
+						if(!cir.contains(p)) { // player is not in circle
+							if(cir.getX()+cir.getRadius()>p.X) { // player is to the left of circle
+								players.get(i).setX(players.get(i).getX() + 1);
+							}
+							if(cir.getX()+cir.getRadius()<p.X) { // player is to the right of circle
+								players.get(i).setX(players.get(i).getX() - 1);
+							}
+							if(cir.getY()+cir.getRadius()>p.Y) { // player is to the left of circle
+								players.get(i).setY(players.get(i).getY() + 1);
+							}
+							if(cir.getY()+cir.getRadius()<p.Y) { // player is to the right of circle
+								players.get(i).setY(players.get(i).getY() - 1);
+							}
+						}
+					}
+				}
+			}
+		} else {
+			int bX = bus.getX();
+			int bY = bus.getY();
+			int bEndX = bus.getEndX();
+			bus.setX(bX+(Math.abs(bX-bEndX))/(30*60));
+			bus.setY(bY+733/(30*60));
+		}
+	}
+	
+	private void render(){
+		bs = display.getCanvas().getBufferStrategy();
+		if(bs == null){
+			display.getCanvas().createBufferStrategy(3);
+			return;
+		}
+		g = bs.getDrawGraphics();
+		//Clear Screen
+		g.clearRect(0, 0, width, height);
+		//Draw Here!
+		
+		//map.render(g);
+		
+		if(players.size()>1) {
+			if(secInGame>0) {
+				for(int i=0; i<allCircles.size(); i++) {
+					allCircles.get(i).render(g);
+				}
+				
+				g.setColor(Color.magenta);
+				for(int i=0; i<storm.size(); i++) {
+					storm.get(i).render(g);
+				}
+				
+				for(int i=0; i<players.size(); i++) {
+					g.setColor(Color.BLACK);
+					if(i==toSpectate) {
+						g.drawOval(players.get(i).getX()-5, players.get(i).getY()-5, 10, 10);
+						g.setColor(Color.WHITE);
+						g.drawString(players.get(i).getName() + " - " + players.get(i).getLanding().name(), 20, 40);
+						g.setColor(Color.GREEN);
+						g.fillRect(20, 50, players.get(i).getHp(), 10);
+					}
+					players.get(i).render(g);
+				}
+				
+				// minimap area
+				g.setColor(Color.black);
+				g.fillRect(660, 60, width, 30);
+				g.setColor(Color.white);
+				g.drawString(timesForCircle[circleOn]-secInGame + " " + players.size(), 670, 70);
+				g.drawString(allCircles.size() + "", 700, 70);
+			} else {
+				bus.renderLine(g);
+				bus.render(g);
+				// minimap area
+				g.setColor(Color.black);
+				g.fillRect(660, 60, width, 30);
+				g.setColor(Color.white);
+				g.drawString(Math.abs(secInGame) + "", 670, 70);
+			}
+		} else {
+			g.setColor(new Color(0, 255, 255));
+			g.fillRect(200, 100, 400, 50);
+			g.setColor(Color.YELLOW);
+			g.setFont(new Font("Arial", Font.BOLD, 30));
+			g.drawString("VICTORY ROYALE \n -" + players.get(0).getName(), 210, 110);
+		}
+		
+		//End Drawing!
+		bs.show();
+		g.dispose();
+	}
+	
+	private int secInGame = -30;
+	
+	public void run(){
+		
+		init();
+		
+		int fps = 60;
+		double timePerTick = 1000000000 / fps;
+		double delta = 0;
+		long now;
+		long lastTime = System.nanoTime();
+		long timer = 0;
+		int ticks = 0;
+		final int incSpeed = 10;
+		
+		while(running){
+			now = System.nanoTime();
+			delta += (now - lastTime) / timePerTick;
+			timer += now - lastTime;
+			lastTime = now;
+			
+			if(delta >= 1){
+				tick();
+				render();
+				ticks++;
+				delta--;
+			}
+			
+			if(timer >= 1000000000){
+				System.out.println("Ticks and Frames: " + ticks);
+				ticks = 0;
+				timer = 0;
+				secInGame += incSpeed; // speed up by *incSpeed* times
+				for(int i=0; i<players.size(); i++) {
+					players.get(i).addSecAttack();
+				}
+				hasChanged = false;
+				hasClosed = false;
+			}
+		}
+		
+		stop();
+	}
+	
+	public int getWidth(){
+		return width;
+	}
+	
+	public int getHeight(){
+		return height;
+	}
+	
+	public synchronized void start(){
+		if(running)
+			return;
+		running = true;
+		thread = new Thread(this);
+		thread.start();
+	}
+	
+	public synchronized void stop(){
+		if(!running)
+			return;
+		running = false;
+		try {
+			thread.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+}
