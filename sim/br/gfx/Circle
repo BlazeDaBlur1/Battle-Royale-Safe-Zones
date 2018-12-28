@@ -1,0 +1,85 @@
+import java.awt.Color;
+import java.awt.Graphics;
+
+public class Circle {
+
+	public int X, Y, Width, Height, radius;
+	public Color color;
+	public boolean toFill;
+	
+	public Circle(int x, int y, int width, int height, int radius, Color color, boolean fill) {
+		X = x;
+		Y = y;
+		Width = width;
+		Height = height;
+		this.radius = radius;
+		this.color = color;
+		toFill = fill;
+	}
+	
+	public void render(Graphics g) {
+		g.setColor(color);
+		for(int i=-5; i<5; i++) {
+			if(toFill) {
+				g.fillOval(X+i, Y+i, Width-i, Height-i);
+			} else {
+				g.drawOval(X+i, Y+i, Width-i, Height-i);
+			}
+		}
+	}
+	
+	public boolean contains(Circle pBound) {
+		int pBoundCenterX = pBound.X+pBound.radius;
+		int cirCenterX = X+radius;
+		
+		int diffBetweenCentersX = Math.abs(pBoundCenterX-cirCenterX);
+		
+		int pBoundCenterY = pBound.Y+pBound.radius;
+		int cirCenterY = Y+radius;
+		
+		int diffBetweenCentersY = Math.abs(pBoundCenterY-cirCenterY);
+		if(diffBetweenCentersX<= (pBound.radius+radius) && diffBetweenCentersX>=Math.abs(pBound.radius-radius)) { // X
+			if(diffBetweenCentersY>=Math.abs(pBound.radius-radius)) { // Y
+				return true;
+			}
+		}
+		
+	    return false;
+	}
+	
+	public int getX() {
+		return X;
+	}
+	
+	public int getWidth() {
+		return Width;
+	}
+
+	public int getRadius() {
+		return radius;
+	}
+	
+	public void setWidth(int width) {
+		Width = width;
+	}
+
+	public int getHeight() {
+		return Height;
+	}
+
+	public void setHeight(int height) {
+		Height = height;
+	}
+
+	public void setX(int x) {
+		X = x;
+	}
+	
+	public int getY() {
+		return Y;
+	}
+	
+	public void setY(int y) {
+		Y = y;
+	}
+}
