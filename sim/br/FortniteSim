@@ -1,0 +1,7 @@
+public class FortniteSim {
+
+	public static void main(String[] args) {
+		Game game = new Game("Fortnite game simulator v0.1", 800, 800);
+		game.start();
+	}
+}
