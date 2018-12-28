@@ -1,0 +1,92 @@
+public enum Location {
+
+	DustyDivot(431, 312, 513-431, 429-312, 5, 2, 0),
+	FatalFields(447, 548, 508-447, 614-548, 3, 2, 0),
+	FrostyFlights(59, 533, 105-59, 574-533, 2, 1, 0),
+	HappyHamlet(235, 640, 261-235, 663-640, 5, 1, 0),
+	HauntedHills(79, 119, 122-79, 143-119, 1, 1, 0),
+	JunkJunction(132, 64, 159-132, 85-64, 1, 1, 0),
+	LazyLinks(396, 114, 434-396, 155-114, 8, 2, 0),
+	LonelyLodge(676, 274, 757-676, 387-274, 2, 2, 0),
+	LootLake(297, 229, 362-297, 325-229, 2, 1, 0),
+	LuckyLanding(444, 716, 474-444, 754-716, 1, 1, 0),
+	ParadisePalms(623, 541, 676-623, 578-541, 5, 2, 0),
+	PleasantPark(190, 175, 235-190, 236-175, 9, 2, 0),
+	PolarPeak(173, 505, 218-173, 547-505, 7, 1, 0),
+	RetailRow(575, 392, 639-575, 429-392, 11, 1, 0),
+	RiskyReels(588, 119, 619-588, 143-119, 5, 1, 0),
+	SaltySprings(432, 464, 477-432, 487-464, 6, 2, 0),
+	ShiftyShafts(274, 480, 307-274, 505-480, 3, 1, 0),
+	SnobbyShores(39, 303, 60-39, 374-303, 4, 1, 0),
+	TiltedTowers(259, 347, 320-259, 399-347, 12, 3, 0),
+	TomatoTemple(487, 217, 544-487, 240-217, 3, 1, 0),
+	WailingWoods(599, 165, 722-599, 264-165, 5, 2, 0);
+	
+	private int x, y, widt, heigh, pct, pplThatLeave, amAt;
+	
+	private Location(int x, int y, int width, int height, int pctPlayers, int pplThatSurv, int amAtSoFar) {
+		this.x = x;
+		this.y = y;
+		widt = width;
+		heigh = height;
+		pct = pctPlayers;
+		pplThatLeave = pplThatSurv;
+		amAt = amAtSoFar;
+	}
+
+	public int getX() {
+		return x;
+	}
+
+	public void setX(int x) {
+		this.x = x;
+	}
+
+	public int getY() {
+		return y;
+	}
+
+	public void setY(int y) {
+		this.y = y;
+	}
+
+	public int getWidth() {
+		return widt;
+	}
+
+	public void setWidth(int widt) {
+		this.widt = widt;
+	}
+
+	public int getHeight() {
+		return heigh;
+	}
+
+	public void setHeight(int heigh) {
+		this.heigh = heigh;
+	}
+
+	public int getPct() {
+		return pct;
+	}
+
+	public void setPct(int pct) {
+		this.pct = pct;
+	}
+
+	public int getPplThatLeave() {
+		return pplThatLeave;
+	}
+
+	public void setPplThatLeave(int pplThatLeave) {
+		this.pplThatLeave = pplThatLeave;
+	}
+	
+	public int getAmAt() {
+		return amAt;
+	}
+	
+	public void addAmAt() {
+		amAt++;
+	}
+}
