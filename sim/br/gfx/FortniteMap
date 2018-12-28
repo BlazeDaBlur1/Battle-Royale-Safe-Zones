@@ -1,0 +1,15 @@
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
+
+public class FortniteMap {
+
+	public BufferedImage map;
+	
+	public FortniteMap() {
+		map = ImageLoader.loadImage("/map/fortnite-map.png");
+	}
+	
+	public void render(Graphics g) {
+		g.drawImage(map, 0, 0, null);
+	}
+}
